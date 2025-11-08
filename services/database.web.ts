@@ -6,7 +6,8 @@ const webError = () => {
 };
 
 export const initDatabase = async (): Promise<void> => {
-  console.warn('SQLite is not supported on web platform.');
+  // Silently return on web - database is not supported
+  // No need to show warning as web platform is handled in UI
   return;
 };
 

@@ -58,11 +58,16 @@ export default function HomeScreen() {
     console.log('imageUri:', imageUri);
     
     if (isWeb) {
-      Alert.alert(
-        'Web Preview',
-        'Saving test results is not available on web. Please use iOS or Android for full functionality.',
-        [{ text: 'OK' }]
-      );
+      // On web, show message using window.alert if available, otherwise use Alert
+      if (typeof window !== 'undefined' && window.alert) {
+        window.alert('Saving test results is not available on web. Please use iOS or Android for full functionality.');
+      } else {
+        Alert.alert(
+          'Web Preview',
+          'Saving test results is not available on web. Please use iOS or Android for full functionality.',
+          [{ text: 'OK' }]
+        );
+      }
       return;
     }
 
@@ -194,11 +199,42 @@ export default function HomeScreen() {
 
   const handleScanNew = () => {
     if (isWeb) {
-      Alert.alert(
-        'Web Preview',
-        'Scanning test results is not available on web. Please use iOS or Android for full functionality.',
-        [{ text: 'OK' }]
-      );
+      // On web, use window.alert and allow file selection
+      if (typeof window !== 'undefined' && window.confirm) {
+        const useFileInput = window.confirm(
+          'On web, you can select an image file. Would you like to choose an image?'
+        );
+        if (useFileInput) {
+          // Create a file input element
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.onchange = async (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            const file = target.files?.[0];
+            if (file) {
+              // Create a data URL from the file
+              const reader = new FileReader();
+              reader.onload = async (event) => {
+                const dataUrl = event.target?.result as string;
+                if (dataUrl) {
+                  // Save the test result with the data URL
+                  await saveTestResult(dataUrl);
+                }
+              };
+              reader.readAsDataURL(file);
+            }
+          };
+          input.click();
+        }
+      } else {
+        // Fallback to Alert.alert if window.confirm is not available
+        Alert.alert(
+          'Web Preview',
+          'Scanning test results is not available on web. Please use iOS or Android for full functionality.',
+          [{ text: 'OK' }]
+        );
+      }
       return;
     }
 

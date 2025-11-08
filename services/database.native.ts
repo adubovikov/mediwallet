@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { TestResult, NewTestResult } from '@/types/test-result';
 
 const DB_NAME = 'mediwallet.db';
@@ -44,10 +44,17 @@ export const saveImage = async (sourceUri: string): Promise<string> => {
     console.log('saveImage: Starting, sourceUri:', sourceUri);
     const timestamp = Date.now();
     const filename = `test_${timestamp}.jpg`;
-    const directory = `${FileSystem.documentDirectory}medical_tests/`;
     
-    console.log('saveImage: Directory:', directory);
-    console.log('saveImage: Document directory:', FileSystem.documentDirectory);
+    // Get document directory using new API
+    const docDir = FileSystem.documentDirectory;
+    if (!docDir) {
+      throw new Error('Document directory is not available');
+    }
+    
+    const directory = `${docDir}medical_tests/`;
+    
+    console.log('saveImage: Directory path:', directory);
+    console.log('saveImage: Document directory:', docDir);
     
     // Create directory if it doesn't exist
     const dirInfo = await FileSystem.getInfoAsync(directory);
@@ -298,7 +305,12 @@ export const getDatabaseStats = async (): Promise<{
     const totalTests = countResult?.count || 0;
     
     // Calculate total size of images
-    const directory = `${FileSystem.documentDirectory}medical_tests/`;
+    const docDir = FileSystem.documentDirectory;
+    if (!docDir) {
+      return { totalTests, totalSize: 0 };
+    }
+    
+    const directory = `${docDir}medical_tests/`;
     let totalSize = 0;
     
     try {

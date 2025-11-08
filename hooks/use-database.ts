@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 
 export const useDatabase = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -6,6 +7,12 @@ export const useDatabase = () => {
 
   useEffect(() => {
     const init = async () => {
+      // Skip database initialization on web
+      if (Platform.OS === 'web') {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         // Dynamic import - React Native resolver will pick database.native.ts or database.web.ts
         const { initDatabase } = await import('@/services/database');
