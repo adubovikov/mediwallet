@@ -33,7 +33,7 @@ export default function TestResultsScreen() {
 
   const loadTestResults = async () => {
     try {
-      // Import database functions
+      // Datenbankfunktionen importieren
       const { getAllTestResults } = await import('@/services/database');
       const results = await getAllTestResults();
       setTestResults(results);
@@ -51,7 +51,7 @@ export default function TestResultsScreen() {
 
     switch (sortOption) {
       case 'date':
-        // Sort by date (newest first)
+        // Nach Datum sortieren (neueste zuerst)
         sorted.sort((a, b) => {
           const dateA = new Date(a.createdAt).getTime();
           const dateB = new Date(b.createdAt).getTime();
@@ -60,7 +60,7 @@ export default function TestResultsScreen() {
         break;
 
       case 'alphabet':
-        // Sort alphabetically by test type
+        // Alphabetisch nach Testtyp sortieren
         sorted.sort((a, b) => {
           const typeA = a.testType.toLowerCase();
           const typeB = b.testType.toLowerCase();
@@ -69,14 +69,14 @@ export default function TestResultsScreen() {
         break;
 
       case 'group':
-        // Sort by test type (group), then by date within each group
+        // Nach Testtyp (Gruppe) sortieren, dann nach Datum innerhalb jeder Gruppe
         sorted.sort((a, b) => {
           const typeA = a.testType.toLowerCase();
           const typeB = b.testType.toLowerCase();
           if (typeA !== typeB) {
             return typeA.localeCompare(typeB);
           }
-          // If same type, sort by date (newest first)
+          // Wenn gleicher Typ, nach Datum sortieren (neueste zuerst)
           const dateA = new Date(a.createdAt).getTime();
           const dateB = new Date(b.createdAt).getTime();
           return dateB - dateA;

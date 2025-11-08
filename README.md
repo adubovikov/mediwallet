@@ -1,118 +1,118 @@
 # MediWallet 💊
 
-A mobile application for managing and storing medical test results locally on your device.
+Eine mobile Anwendung zur Verwaltung und Speicherung medizinischer Testergebnisse lokal auf Ihrem Gerät.
 
-## 🚀 Quick Start
+## 🚀 Schnellstart
 
-1. **Install dependencies**
+1. **Abhängigkeiten installieren**
    ```bash
    npm install
    ```
 
-2. **Start the app**
+2. **App starten**
    ```bash
    npm start
    ```
 
-3. **Run on your device**
-   - Scan QR code with Expo Go app (iOS/Android)
-   - Press `a` for Android emulator
-   - Press `i` for iOS simulator
-   - Press `w` for web browser
+3. **Auf Ihrem Gerät ausführen**
+   - QR-Code mit der Expo Go App scannen (iOS/Android)
+   - `a` drücken für Android-Emulator
+   - `i` drücken für iOS-Simulator
+   - `w` drücken für Webbrowser
 
-## ✨ Features
+## ✨ Funktionen
 
-- 📸 **Scan New Tests** - Take photos or upload images of medical tests
-- 📂 **Access Test Results** - View all saved test results
-- 📊 **Analyze Health Status** - (Coming soon)
-- 🗄️ **Local Storage** - All data stored securely on your device (SQLite + File System)
-- 🌓 **Dark Mode** - Automatic theme switching
-- ✏️ **Edit & Delete** - Manage your test results
+- 📸 **Neue Tests scannen** - Fotos aufnehmen oder Bilder von medizinischen Tests hochladen
+- 📂 **Testergebnisse aufrufen** - Alle gespeicherten Testergebnisse anzeigen
+- 📊 **Gesundheitsstatus analysieren** - (In Kürze verfügbar)
+- 🗄️ **Lokale Speicherung** - Alle Daten sicher auf Ihrem Gerät gespeichert (SQLite + Dateisystem)
+- 🌓 **Dunkler Modus** - Automatisches Theme-Wechseln
+- ✏️ **Bearbeiten & Löschen** - Ihre Testergebnisse verwalten
 
-## 📱 Screenshots & Usage
+## 📱 Screenshots & Verwendung
 
-### Main Screen
-- **Access Test Results** - Browse all saved tests
-- **Scan New Test** - Add new test results via camera or gallery
-- **Analyze Health Status** - Get health insights (coming soon)
+### Hauptbildschirm
+- **Testergebnisse aufrufen** - Alle gespeicherten Tests durchsuchen
+- **Neuen Test scannen** - Neue Testergebnisse über Kamera oder Galerie hinzufügen
+- **Gesundheitsstatus analysieren** - Gesundheitsinsights erhalten (in Kürze verfügbar)
 
-### Test Results List
-- View all test results with thumbnails
-- Pull to refresh
-- Tap any item to view details
+### Testergebnisse-Liste
+- Alle Testergebnisse mit Miniaturansichten anzeigen
+- Zum Aktualisieren nach unten ziehen
+- Auf ein Element tippen, um Details anzuzeigen
 
-### Test Details
-- View full-size image
-- Edit test type and notes
-- Delete test result
+### Testdetails
+- Vollständiges Bild anzeigen
+- Testtyp und Notizen bearbeiten
+- Testergebnis löschen
 
-## 🗄️ Data Storage
+## 🗄️ Datenspeicherung
 
-- **Database**: SQLite for metadata (test type, date, notes, etc.)
-- **Files**: Images stored in device's document directory
-- **Privacy**: All data stays on your device
+- **Datenbank**: SQLite für Metadaten (Testtyp, Datum, Notizen, etc.)
+- **Dateien**: Bilder werden im Dokumentenverzeichnis des Geräts gespeichert
+- **Datenschutz**: Alle Daten bleiben auf Ihrem Gerät
 
-## 📋 Requirements
+## 📋 Anforderungen
 
-- Node.js 18.19.1 or higher
+- Node.js 18.19.1 oder höher
 - Expo CLI
-- iOS Simulator, Android Emulator, or Expo Go app
+- iOS Simulator, Android Emulator oder Expo Go App
 
-## 📚 Documentation
+## 📚 Dokumentation
 
-See [MEDIWALLET_GUIDE.md](./MEDIWALLET_GUIDE.md) for detailed documentation.
+Siehe [MEDIWALLET_GUIDE.md](./MEDIWALLET_GUIDE.md) für detaillierte Dokumentation.
 
 ## 🔧 Tech Stack
 
 - React Native (Expo)
 - TypeScript
-- Expo Router (navigation)
-- expo-sqlite (database)
-- expo-file-system (file storage)
-- expo-image-picker (camera/gallery)
+- Expo Router (Navigation)
+- expo-sqlite (Datenbank)
+- expo-file-system (Dateispeicherung)
+- expo-image-picker (Kamera/Galerie)
 
-## 📝 Available Scripts
+## 📝 Verfügbare Skripte
 
 ```bash
-npm start          # Start Expo dev server
-npm run android    # Run on Android
-npm run ios        # Run on iOS
-npm run web        # Run in browser
-npm run lint       # Run linter
+npm start          # Expo Dev-Server starten
+npm run android    # Auf Android ausführen
+npm run ios        # Auf iOS ausführen
+npm run web        # Im Browser ausführen
+npm run lint       # Linter ausführen
 ```
 
-## 🛠️ Project Structure
+## 🛠️ Projektstruktur
 
 ```
 mediwallet/
-├── app/                    # Screens and navigation
-│   ├── (tabs)/            # Tab navigation
-│   ├── test-results.tsx   # List of all tests
-│   └── test-detail/       # Detail view
-├── components/            # Reusable UI components
-├── services/              # Database & file operations
-├── types/                 # TypeScript types
-└── hooks/                 # Custom React hooks
+├── app/                    # Bildschirme und Navigation
+│   ├── (tabs)/            # Tab-Navigation
+│   ├── test-results.tsx   # Liste aller Tests
+│   └── test-detail/       # Detailansicht
+├── components/            # Wiederverwendbare UI-Komponenten
+├── services/              # Datenbank- & Dateioperationen
+├── types/                 # TypeScript-Typen
+└── hooks/                 # Benutzerdefinierte React-Hooks
 ```
 
-## 🔐 Permissions
+## 🔐 Berechtigungen
 
-The app will request:
-- Camera access (for taking photos)
-- Media library access (for selecting photos)
+Die App wird anfordern:
+- Kamera-Zugriff (zum Aufnehmen von Fotos)
+- Medienbibliothek-Zugriff (zum Auswählen von Fotos)
 
-## 🚧 Coming Soon
+## 🚧 In Kürze verfügbar
 
-- OCR text extraction
-- Health status analysis
-- Export to PDF
-- Cloud backup
-- Test result trends
+- OCR-Textextraktion
+- Gesundheitsstatus-Analyse
+- Export nach PDF
+- Cloud-Backup
+- Testergebnis-Trends
 
-## 📄 License
+## 📄 Lizenz
 
-Private project
+Privates Projekt
 
 ---
 
-Made with ❤️ using Expo
+Erstellt mit ❤️ mit Expo

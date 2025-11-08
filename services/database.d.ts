@@ -1,5 +1,5 @@
-// Type definitions for platform-specific database module
-// React Native resolver automatically selects database.native.ts or database.web.ts at runtime
+// Typdefinitionen für plattformspezifisches Datenbankmodul
+// React Native Resolver wählt automatisch database.native.ts oder database.web.ts zur Laufzeit aus
 
 import { TestResult, NewTestResult } from '@/types/test-result';
 

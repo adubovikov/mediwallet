@@ -6,9 +6,9 @@ const DB_NAME = 'mediwallet.db';
 
 let db: SQLite.SQLiteDatabase | null = null;
 
-// Initialize database
+// Datenbank initialisieren
 export const initDatabase = async (): Promise<void> => {
-  // If already initialized, return early
+  // Wenn bereits initialisiert, früh zurückkehren
   if (db) {
     console.log('Database already initialized');
     return;
@@ -17,7 +17,7 @@ export const initDatabase = async (): Promise<void> => {
   try {
     db = await SQLite.openDatabaseAsync(DB_NAME);
     
-    // Create tables
+    // Tabellen erstellen
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS test_results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,19 +33,19 @@ export const initDatabase = async (): Promise<void> => {
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
-    db = null; // Reset on error
+    db = null; // Bei Fehler zurücksetzen
     throw error;
   }
 };
 
-// Save image to permanent storage
+// Bild in permanenten Speicher speichern
 export const saveImage = async (sourceUri: string): Promise<string> => {
   try {
     console.log('saveImage: Starting, sourceUri:', sourceUri);
     const timestamp = Date.now();
     const filename = `test_${timestamp}.jpg`;
     
-    // Get document directory using new API
+    // Dokumentenverzeichnis mit neuer API abrufen
     const docDir = FileSystem.documentDirectory;
     if (!docDir) {
       throw new Error('Document directory is not available');
@@ -56,7 +56,7 @@ export const saveImage = async (sourceUri: string): Promise<string> => {
     console.log('saveImage: Directory path:', directory);
     console.log('saveImage: Document directory:', docDir);
     
-    // Create directory if it doesn't exist
+    // Verzeichnis erstellen, falls es nicht existiert
     const dirInfo = await FileSystem.getInfoAsync(directory);
     console.log('saveImage: Directory exists:', dirInfo.exists);
     
@@ -69,7 +69,7 @@ export const saveImage = async (sourceUri: string): Promise<string> => {
     const destinationUri = `${directory}${filename}`;
     console.log('saveImage: Destination URI:', destinationUri);
     
-    // Copy image to permanent storage
+    // Bild in permanenten Speicher kopieren
     console.log('saveImage: Copying file...');
     await FileSystem.copyAsync({
       from: sourceUri,
@@ -84,9 +84,9 @@ export const saveImage = async (sourceUri: string): Promise<string> => {
   }
 };
 
-// Add new test result
+// Neues Testergebnis hinzufügen
 export const addTestResult = async (testResult: NewTestResult): Promise<number> => {
-  // If database is not initialized, try to initialize it
+  // Wenn Datenbank nicht initialisiert ist, versuchen zu initialisieren
   if (!db) {
     console.log('Database not initialized, attempting to initialize...');
     await initDatabase();
@@ -123,12 +123,12 @@ export const addTestResult = async (testResult: NewTestResult): Promise<number> 
     console.error('addTestResult: Error message:', error?.message);
     console.error('addTestResult: Error stack:', error?.stack);
     
-    // If database connection is lost, try to reinitialize
+    // Wenn Datenbankverbindung verloren geht, versuchen erneut zu initialisieren
     if (error?.message?.includes('closed') || error?.message?.includes('not open')) {
       console.log('addTestResult: Database connection lost, reinitializing...');
       db = null;
       await initDatabase();
-      // Retry once
+      // Einmal erneut versuchen
       try {
         const retryResult = await db!.runAsync(
           `INSERT INTO test_results (created_at, test_type, image_path, results, notes, analyzed_data)
@@ -154,7 +154,7 @@ export const addTestResult = async (testResult: NewTestResult): Promise<number> 
   }
 };
 
-// Get all test results
+// Alle Testergebnisse abrufen
 export const getAllTestResults = async (): Promise<TestResult[]> => {
   if (!db) {
     throw new Error('Database not initialized');
@@ -180,7 +180,7 @@ export const getAllTestResults = async (): Promise<TestResult[]> => {
   }
 };
 
-// Get test result by ID
+// Testergebnis nach ID abrufen
 export const getTestResultById = async (id: number): Promise<TestResult | null> => {
   if (!db) {
     throw new Error('Database not initialized');
@@ -211,7 +211,7 @@ export const getTestResultById = async (id: number): Promise<TestResult | null> 
   }
 };
 
-// Update test result
+// Testergebnis aktualisieren
 export const updateTestResult = async (
   id: number,
   updates: Partial<Omit<TestResult, 'id' | 'createdAt'>>
@@ -259,18 +259,18 @@ export const updateTestResult = async (
   }
 };
 
-// Delete test result
+// Testergebnis löschen
 export const deleteTestResult = async (id: number): Promise<void> => {
   if (!db) {
     throw new Error('Database not initialized');
   }
   
   try {
-    // Get the image path before deleting
+    // Bildpfad vor dem Löschen abrufen
     const testResult = await getTestResultById(id);
     
     if (testResult) {
-      // Delete the image file
+      // Bilddatei löschen
       const fileInfo = await FileSystem.getInfoAsync(testResult.imagePath);
       if (fileInfo.exists) {
         await FileSystem.deleteAsync(testResult.imagePath);
@@ -278,7 +278,7 @@ export const deleteTestResult = async (id: number): Promise<void> => {
       }
     }
     
-    // Delete from database
+    // Aus Datenbank löschen
     await db.runAsync('DELETE FROM test_results WHERE id = ?', [id]);
     
     console.log('Test result deleted:', id);
@@ -288,7 +288,7 @@ export const deleteTestResult = async (id: number): Promise<void> => {
   }
 };
 
-// Get database statistics
+// Datenbankstatistiken abrufen
 export const getDatabaseStats = async (): Promise<{
   totalTests: number;
   totalSize: number;
@@ -304,7 +304,7 @@ export const getDatabaseStats = async (): Promise<{
     
     const totalTests = countResult?.count || 0;
     
-    // Calculate total size of images
+    // Gesamtgröße der Bilder berechnen
     const docDir = FileSystem.documentDirectory;
     if (!docDir) {
       return { totalTests, totalSize: 0 };

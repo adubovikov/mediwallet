@@ -35,7 +35,7 @@ export default function TestDetailScreen() {
 
   const loadTestResult = async () => {
     try {
-      // Import database functions
+      // Datenbankfunktionen importieren
       const { getTestResultById } = await import('@/services/database');
       const result = await getTestResultById(Number(id));
       setTestResult(result);
@@ -55,7 +55,7 @@ export default function TestDetailScreen() {
     if (!testResult) return;
 
     try {
-      // Import database functions
+      // Datenbankfunktionen importieren
       const { updateTestResult } = await import('@/services/database');
       await updateTestResult(testResult.id, {
         testType: editedType,
@@ -85,7 +85,7 @@ export default function TestDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Import database functions
+              // Datenbankfunktionen importieren
               const { deleteTestResult } = await import('@/services/database');
               await deleteTestResult(Number(id));
               Alert.alert('Success', 'Test result deleted successfully');

@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-// Test types available for selection
+// Verfügbare Testtypen zur Auswahl
 const TEST_TYPES = [
   'EKG',
   'Blutbild',
@@ -96,7 +96,7 @@ export default function HomeScreen() {
     console.log('testType:', testType);
     
     if (isWeb) {
-      // On web, show message using window.alert if available, otherwise use Alert
+      // Auf Web Nachricht mit window.alert anzeigen, falls verfügbar, sonst Alert verwenden
       if (typeof window !== 'undefined' && window.alert) {
         window.alert('Saving test results is not available on web. Please use iOS or Android for full functionality.');
       } else {
@@ -111,25 +111,25 @@ export default function HomeScreen() {
 
     try {
       console.log('Step 1: Importing database functions...');
-      // Import database functions
+      // Datenbankfunktionen importieren
       const dbModule = await import('@/services/database');
       const { initDatabase, saveImage, addTestResult } = dbModule;
       console.log('Database module imported:', Object.keys(dbModule));
 
       console.log('Step 2: Ensuring database is ready...');
-      // Ensure database is initialized (safe to call multiple times)
-      // Database will auto-initialize in addTestResult if needed
+      // Sicherstellen, dass Datenbank initialisiert ist (sicher, mehrfach aufzurufen)
+      // Datenbank wird sich in addTestResult automatisch initialisieren, falls nötig
       try {
         await initDatabase();
         console.log('Database initialized successfully');
       } catch (initError: any) {
         console.log('Database init check (may already be initialized):', initError?.message);
-        // Continue anyway - addTestResult will handle initialization
+        // Trotzdem fortfahren - addTestResult wird die Initialisierung behandeln
       }
 
       console.log('Step 3: Saving image...');
       console.log('Image URI:', imageUri);
-      // Save image to permanent storage
+      // Bild in permanenten Speicher speichern
       let permanentPath: string;
       try {
         permanentPath = await saveImage(imageUri);
@@ -139,7 +139,7 @@ export default function HomeScreen() {
         throw new Error(`Failed to save image: ${saveError?.message || saveError}`);
       }
 
-      // Step 3.5: Select test type if not provided
+      // Schritt 3.5: Testtyp auswählen, falls nicht bereitgestellt
       let selectedTestType = testType;
       if (!selectedTestType) {
         selectedTestType = await selectTestType(imageUri, permanentPath);
@@ -150,7 +150,7 @@ export default function HomeScreen() {
       }
 
       console.log('Step 4: Adding test result to database...');
-      // Save to database
+      // In Datenbank speichern
       let testId: number;
       try {
         testId = await addTestResult({
@@ -179,7 +179,7 @@ export default function HomeScreen() {
       
       const errorMessage = error?.message || error?.toString() || 'Unknown error occurred';
       
-      // Show more specific error message
+      // Spezifischere Fehlermeldung anzeigen
       if (errorMessage.includes('not supported on web') || errorMessage.includes('web platform')) {
         Alert.alert(
           'Web Preview',
@@ -199,7 +199,7 @@ export default function HomeScreen() {
           [{ text: 'OK' }]
         );
       } else {
-        // Show detailed error for debugging
+        // Detaillierten Fehler für Debugging anzeigen
         const shortMessage = errorMessage.length > 100 
           ? errorMessage.substring(0, 100) + '...' 
           : errorMessage;
@@ -247,13 +247,13 @@ export default function HomeScreen() {
 
   const handleScanNew = () => {
     if (isWeb) {
-      // On web, use window.alert and allow file selection
+      // Auf Web window.alert verwenden und Dateiauswahl erlauben
       if (typeof window !== 'undefined' && window.confirm) {
         const useFileInput = window.confirm(
           'On web, you can select an image file. Would you like to choose an image?'
         );
         if (useFileInput) {
-          // Create a file input element
+          // Datei-Eingabeelement erstellen
           const input = document.createElement('input');
           input.type = 'file';
           input.accept = 'image/*';
@@ -261,12 +261,12 @@ export default function HomeScreen() {
             const target = e.target as HTMLInputElement;
             const file = target.files?.[0];
             if (file) {
-              // Create a data URL from the file
+              // Data URL aus der Datei erstellen
               const reader = new FileReader();
               reader.onload = async (event) => {
                 const dataUrl = event.target?.result as string;
                 if (dataUrl) {
-                  // Save the test result with the data URL
+                  // Testergebnis mit der Data URL speichern
                   await saveTestResult(dataUrl);
                 }
               };
@@ -276,7 +276,7 @@ export default function HomeScreen() {
           input.click();
         }
       } else {
-        // Fallback to Alert.alert if window.confirm is not available
+        // Fallback zu Alert.alert, falls window.confirm nicht verfügbar ist
         Alert.alert(
           'Web Preview',
           'Scanning test results is not available on web. Please use iOS or Android for full functionality.',
@@ -309,7 +309,7 @@ export default function HomeScreen() {
 
   const handleAnalyzeCondition = () => {
     console.log('Analyze Health Status');
-    // TODO: Show health status analysis
+    // TODO: Gesundheitsstatus-Analyse anzeigen
   };
 
   return (

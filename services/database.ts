@@ -1,11 +1,11 @@
-// Platform-specific database module re-export
-// This file ensures proper module resolution for dynamic imports
-// Metro bundler will automatically resolve .native.ts or .web.ts based on platform
-// For web platform, we need to explicitly use .web extension
-// For native platforms, we use .native extension
+// Plattformspezifisches Datenbankmodul-Re-Export
+// Diese Datei stellt eine ordnungsgemäße Modulauflösung für dynamische Imports sicher
+// Metro-Bundler löst automatisch .native.ts oder .web.ts basierend auf der Plattform auf
+// Für Web-Plattform müssen wir explizit die .web-Erweiterung verwenden
+// Für native Plattformen verwenden wir die .native-Erweiterung
 
-// Use conditional exports based on platform
-// This approach works better with Metro bundler's platform resolution
+// Bedingte Exports basierend auf Plattform verwenden
+// Dieser Ansatz funktioniert besser mit Metro-Bundlers Plattformauflösung
 let _databaseModule: any = null;
 
 const getDatabaseModule = () => {
@@ -13,14 +13,14 @@ const getDatabaseModule = () => {
     return _databaseModule;
   }
 
-  // Use dynamic import-like approach that works with Metro bundler
-  // Metro will automatically resolve the correct file based on platform
+  // Dynamischen Import-ähnlichen Ansatz verwenden, der mit Metro-Bundler funktioniert
+  // Metro löst automatisch die richtige Datei basierend auf der Plattform auf
   if (typeof window !== 'undefined') {
-    // Web platform
+    // Web-Plattform
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     _databaseModule = require('./database.web');
   } else {
-    // Native platform (iOS/Android)
+    // Native Plattform (iOS/Android)
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     _databaseModule = require('./database.native');
   }
@@ -30,7 +30,7 @@ const getDatabaseModule = () => {
 
 const databaseModule = getDatabaseModule();
 
-// Re-export all functions with proper types
+// Alle Funktionen mit korrekten Typen erneut exportieren
 export const initDatabase = databaseModule.initDatabase;
 export const saveImage = databaseModule.saveImage;
 export const addTestResult = databaseModule.addTestResult;

@@ -1,13 +1,13 @@
 import { TestResult, NewTestResult } from '@/types/test-result';
 
-// Web platform stubs - database not supported on web
+// Web-Plattform-Stubs - Datenbank wird auf Web nicht unterstützt
 const webError = () => {
   throw new Error('Database operations are not supported on web platform. Please use iOS or Android.');
 };
 
 export const initDatabase = async (): Promise<void> => {
-  // Silently return on web - database is not supported
-  // No need to show warning as web platform is handled in UI
+  // Auf Web still zurückkehren - Datenbank wird nicht unterstützt
+  // Keine Warnung nötig, da Web-Plattform in der UI behandelt wird
   return;
 };
 

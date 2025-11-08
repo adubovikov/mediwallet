@@ -7,14 +7,14 @@ export const useDatabase = () => {
 
   useEffect(() => {
     const init = async () => {
-      // Skip database initialization on web
+      // Datenbankinitialisierung auf Web überspringen
       if (Platform.OS === 'web') {
         setIsLoading(false);
         return;
       }
 
       try {
-        // Dynamic import - React Native resolver will pick database.native.ts or database.web.ts
+        // Dynamischer Import - React Native Resolver wählt database.native.ts oder database.web.ts
         const { initDatabase } = await import('@/services/database');
         await initDatabase();
         setIsLoading(false);
