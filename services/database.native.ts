@@ -1,10 +1,25 @@
 import * as SQLite from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system/legacy';
 import { TestResult, NewTestResult } from '@/types/test-result';
+import { UserSettings, NewUserSettings } from '@/types/user-settings';
 
 const DB_NAME = 'mediwallet.db';
 
 let db: SQLite.SQLiteDatabase | null = null;
+
+// Eindeutige Benutzer-ID generieren
+const generateUserId = (): string => {
+  // Einfache UUID-ähnliche ID generieren
+  const chars = '0123456789abcdef';
+  let result = '';
+  for (let i = 0; i < 32; i++) {
+    if (i === 8 || i === 12 || i === 16 || i === 20) {
+      result += '-';
+    }
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+};
 
 // Datenbank initialisieren
 export const initDatabase = async (): Promise<void> => {
@@ -28,7 +43,118 @@ export const initDatabase = async (): Promise<void> => {
         notes TEXT,
         analyzed_data TEXT
       );
+      
+      CREATE TABLE IF NOT EXISTS user_settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT UNIQUE NOT NULL,
+        user_name TEXT NOT NULL,
+        user_phone TEXT,
+        user_email TEXT,
+        user_address TEXT,
+        user_date_of_birth TEXT,
+        insurance_company TEXT,
+        insurance_number TEXT,
+        doctor_name TEXT NOT NULL,
+        doctor_phone TEXT,
+        doctor_email TEXT,
+        doctor_address TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      
+      CREATE TABLE IF NOT EXISTS test_result_shares (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        test_result_id INTEGER NOT NULL,
+        doctor_name TEXT NOT NULL,
+        doctor_email TEXT,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (test_result_id) REFERENCES test_results(id) ON DELETE CASCADE
+      );
+      
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender_id TEXT NOT NULL,
+        receiver_id TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        read INTEGER DEFAULT 0
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_chat_sender_receiver ON chat_messages(sender_id, receiver_id);
+      CREATE INDEX IF NOT EXISTS idx_chat_receiver_sender ON chat_messages(receiver_id, sender_id);
     `);
+    
+    // Migration: Neue Spalten hinzufügen, falls sie nicht existieren
+    try {
+      // Prüfe, ob die Tabelle existiert und welche Spalten vorhanden sind
+      const tableInfo = await db.getAllAsync<any>(
+        "PRAGMA table_info(user_settings)"
+      );
+      const existingColumns = tableInfo.map((col: any) => col.name);
+      
+      // Füge fehlende Spalten hinzu
+      if (!existingColumns.includes('user_phone')) {
+        await db.execAsync('ALTER TABLE user_settings ADD COLUMN user_phone TEXT;');
+        console.log('Added column: user_phone');
+      }
+      if (!existingColumns.includes('user_email')) {
+        await db.execAsync('ALTER TABLE user_settings ADD COLUMN user_email TEXT;');
+        console.log('Added column: user_email');
+      }
+      if (!existingColumns.includes('user_address')) {
+        await db.execAsync('ALTER TABLE user_settings ADD COLUMN user_address TEXT;');
+        console.log('Added column: user_address');
+      }
+      if (!existingColumns.includes('user_date_of_birth')) {
+        await db.execAsync('ALTER TABLE user_settings ADD COLUMN user_date_of_birth TEXT;');
+        console.log('Added column: user_date_of_birth');
+      }
+      if (!existingColumns.includes('insurance_company')) {
+        await db.execAsync('ALTER TABLE user_settings ADD COLUMN insurance_company TEXT;');
+        console.log('Added column: insurance_company');
+      }
+      if (!existingColumns.includes('insurance_number')) {
+        await db.execAsync('ALTER TABLE user_settings ADD COLUMN insurance_number TEXT;');
+        console.log('Added column: insurance_number');
+      }
+      if (!existingColumns.includes('openai_api_key')) {
+        await db.execAsync('ALTER TABLE user_settings ADD COLUMN openai_api_key TEXT;');
+        console.log('Added column: openai_api_key');
+      }
+      if (!existingColumns.includes('ai_provider')) {
+        await db.execAsync('ALTER TABLE user_settings ADD COLUMN ai_provider TEXT;');
+        console.log('Added column: ai_provider');
+      }
+      if (!existingColumns.includes('ai_api_key')) {
+        await db.execAsync('ALTER TABLE user_settings ADD COLUMN ai_api_key TEXT;');
+        console.log('Added column: ai_api_key');
+      }
+      if (!existingColumns.includes('user_id')) {
+        try {
+          await db.execAsync('ALTER TABLE user_settings ADD COLUMN user_id TEXT;');
+          console.log('Added column: user_id');
+          // Generiere eine UUID für bestehende Nutzer ohne user_id
+          try {
+            const existingUsers = await db.getAllAsync<any>('SELECT id FROM user_settings WHERE user_id IS NULL');
+            for (const user of existingUsers) {
+              const uuid = generateUserId();
+              await db.runAsync('UPDATE user_settings SET user_id = ? WHERE id = ?', [uuid, user.id]);
+              console.log('Generated user_id for user:', user.id);
+            }
+          } catch (updateError) {
+            console.error('Error updating existing users with user_id:', updateError);
+          }
+        } catch (addColumnError) {
+          console.error('Error adding user_id column:', addColumnError);
+          throw addColumnError;
+        }
+      }
+    } catch (migrationError) {
+      // Migration-Fehler nicht ignorieren - wichtig für user_id
+      console.error('Migration error:', migrationError);
+      // Versuche trotzdem fortzufahren, aber logge den Fehler
+    }
     
     console.log('Database initialized successfully');
   } catch (error) {
@@ -238,7 +364,7 @@ export const updateTestResult = async (
     }
     if (updates.analyzedData !== undefined) {
       fields.push('analyzed_data = ?');
-      values.push(updates.analyzedData);
+      values.push(updates.analyzedData || null);
     }
     
     if (fields.length === 0) {
@@ -334,6 +460,395 @@ export const getDatabaseStats = async (): Promise<{
     };
   } catch (error) {
     console.error('Error getting database stats:', error);
+    throw error;
+  }
+};
+
+// Benutzereinstellungen abrufen
+export const getUserSettings = async (): Promise<UserSettings | null> => {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+  
+  try {
+    // Prüfe zuerst, ob die Spalte user_id existiert
+    const tableInfo = await db.getAllAsync<any>("PRAGMA table_info(user_settings)");
+    const existingColumns = tableInfo.map((col: any) => col.name);
+    const hasUserIdColumn = existingColumns.includes('user_id');
+    
+    // Wähle nur vorhandene Spalten aus
+    let query = 'SELECT ';
+    if (hasUserIdColumn) {
+      query += 'id, user_id, user_name, user_phone, user_email, user_address, user_date_of_birth, ';
+    } else {
+      query += 'id, user_name, user_phone, user_email, user_address, user_date_of_birth, ';
+    }
+    query += 'insurance_company, insurance_number, doctor_name, doctor_phone, doctor_email, doctor_address, ';
+    query += 'openai_api_key, ai_provider, ai_api_key, created_at, updated_at ';
+    query += 'FROM user_settings ORDER BY id DESC LIMIT 1';
+    
+    const result = await db.getFirstAsync<any>(query);
+    
+    if (!result) {
+      return null;
+    }
+    
+    // Wenn keine user_id vorhanden ist, versuche sie hinzuzufügen und zu generieren
+    if (!hasUserIdColumn || !result.user_id) {
+      try {
+        // Versuche die Spalte hinzuzufügen, falls sie nicht existiert
+        if (!hasUserIdColumn) {
+          await db.execAsync('ALTER TABLE user_settings ADD COLUMN user_id TEXT;');
+          console.log('Added user_id column in getUserSettings');
+        }
+        // Generiere eine UUID
+        const userId = generateUserId();
+        await db.runAsync('UPDATE user_settings SET user_id = ? WHERE id = ?', [userId, result.id]);
+        result.user_id = userId;
+        console.log('Generated user_id for user:', result.id);
+      } catch (error) {
+        console.error('Error adding/generating user_id:', error);
+        // Fallback: Verwende eine temporäre ID basierend auf dem Namen
+        result.user_id = result.user_name || `user_${result.id}`;
+      }
+    }
+    
+    return {
+      id: result.id,
+      userId: result.user_id || result.user_name || `user_${result.id}`,
+      userName: result.user_name,
+      userPhone: result.user_phone || undefined,
+      userEmail: result.user_email || undefined,
+      userAddress: result.user_address || undefined,
+      userDateOfBirth: result.user_date_of_birth || undefined,
+      insuranceCompany: result.insurance_company || undefined,
+      insuranceNumber: result.insurance_number || undefined,
+      doctorName: result.doctor_name,
+      doctorPhone: result.doctor_phone || undefined,
+      doctorEmail: result.doctor_email || undefined,
+      doctorAddress: result.doctor_address || undefined,
+      openaiApiKey: result.openai_api_key || undefined,
+      aiProvider: result.ai_provider || undefined,
+      aiApiKey: result.ai_api_key || undefined,
+      createdAt: result.created_at,
+      updatedAt: result.updated_at,
+    };
+  } catch (error) {
+    console.error('Error getting user settings:', error);
+    throw error;
+  }
+};
+
+// Benutzereinstellungen speichern oder aktualisieren
+export const saveUserSettings = async (settings: NewUserSettings): Promise<number> => {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+  
+  try {
+    // Prüfen, ob bereits Einstellungen existieren
+    const existing = await getUserSettings();
+    const now = new Date().toISOString();
+    
+    if (existing) {
+      // Aktualisieren - user_id bleibt unverändert
+      await db.runAsync(
+        `UPDATE user_settings 
+          SET user_name = ?, user_phone = ?, user_email = ?, user_address = ?, user_date_of_birth = ?,
+              insurance_company = ?, insurance_number = ?,
+              doctor_name = ?, doctor_phone = ?, doctor_email = ?, doctor_address = ?,
+              openai_api_key = ?, ai_provider = ?, ai_api_key = ?, updated_at = ?
+          WHERE id = ?`,
+        [
+          settings.userName,
+          settings.userPhone || null,
+          settings.userEmail || null,
+          settings.userAddress || null,
+          settings.userDateOfBirth || null,
+          settings.insuranceCompany || null,
+          settings.insuranceNumber || null,
+          settings.doctorName,
+          settings.doctorPhone || null,
+          settings.doctorEmail || null,
+          settings.doctorAddress || null,
+          settings.openaiApiKey || null,
+          settings.aiProvider || null,
+          settings.aiApiKey || null,
+          now,
+          existing.id,
+        ]
+      );
+      console.log('User settings updated:', existing.id);
+      return existing.id;
+    } else {
+      // Neu erstellen - generiere user_id
+      const userId = generateUserId();
+      const result = await db.runAsync(
+        `INSERT INTO user_settings (user_id, user_name, user_phone, user_email, user_address, user_date_of_birth,
+                                    insurance_company, insurance_number,
+                                    doctor_name, doctor_phone, doctor_email, doctor_address,
+                                    openai_api_key, ai_provider, ai_api_key, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          userId,
+          settings.userName,
+          settings.userPhone || null,
+          settings.userEmail || null,
+          settings.userAddress || null,
+          settings.userDateOfBirth || null,
+          settings.insuranceCompany || null,
+          settings.insuranceNumber || null,
+          settings.doctorName,
+          settings.doctorPhone || null,
+          settings.doctorEmail || null,
+          settings.doctorAddress || null,
+          settings.openaiApiKey || null,
+          settings.aiProvider || null,
+          settings.aiApiKey || null,
+          now,
+          now,
+        ]
+      );
+      const insertedId = result.lastInsertRowId;
+      console.log('User settings created:', insertedId, 'with userId:', userId);
+      return insertedId;
+    }
+  } catch (error) {
+    console.error('Error saving user settings:', error);
+    throw error;
+  }
+};
+
+// Test-Ergebnis-Freigabe erstellen
+export const createTestResultShare = async (
+  testResultId: number,
+  doctorName: string,
+  doctorEmail: string | null,
+  expiresAt: string
+): Promise<number> => {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+  
+  try {
+    const now = new Date().toISOString();
+    const result = await db.runAsync(
+      `INSERT INTO test_result_shares (test_result_id, doctor_name, doctor_email, expires_at, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [testResultId, doctorName, doctorEmail || null, expiresAt, now]
+    );
+    
+    return result.lastInsertRowId;
+  } catch (error) {
+    console.error('Error creating test result share:', error);
+    throw error;
+  }
+};
+
+// Alle Freigaben für ein Test-Ergebnis abrufen
+export const getTestResultShares = async (testResultId: number): Promise<any[]> => {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+  
+  try {
+    const shares = await db.getAllAsync<any>(
+      `SELECT * FROM test_result_shares 
+       WHERE test_result_id = ? 
+       ORDER BY created_at DESC`,
+      [testResultId]
+    );
+    
+    return shares;
+  } catch (error) {
+    console.error('Error getting test result shares:', error);
+    throw error;
+  }
+};
+
+// Chat-Nachricht senden
+export const sendChatMessage = async (message: NewChatMessage): Promise<number> => {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+  
+  try {
+    const now = new Date().toISOString();
+    console.log('Saving chat message to database:', {
+      senderId: message.senderId,
+      receiverId: message.receiverId,
+      message: message.message.substring(0, 50),
+      now,
+    });
+    
+    const result = await db.runAsync(
+      `INSERT INTO chat_messages (sender_id, receiver_id, message, created_at, read)
+       VALUES (?, ?, ?, ?, 0)`,
+      [message.senderId, message.receiverId, message.message, now]
+    );
+    
+    console.log('Chat message saved successfully with ID:', result.lastInsertRowId);
+    
+    // Verifiziere, dass die Nachricht gespeichert wurde
+    const savedMessage = await db.getFirstAsync<any>(
+      'SELECT * FROM chat_messages WHERE id = ?',
+      [result.lastInsertRowId]
+    );
+    console.log('Verified saved message:', savedMessage);
+    console.log('Verified saved message.message:', savedMessage?.message);
+    console.log('Verified saved message.message type:', typeof savedMessage?.message);
+    console.log('Verified saved message.message value:', JSON.stringify(savedMessage?.message));
+    
+    return result.lastInsertRowId;
+  } catch (error) {
+    console.error('Error sending chat message:', error);
+    throw error;
+  }
+};
+
+// Chat-Nachrichten zwischen zwei Nutzern abrufen
+export const getChatMessages = async (
+  userId1: string,
+  userId2: string
+): Promise<ChatMessage[]> => {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+  
+  try {
+    console.log('Getting chat messages for:', { userId1, userId2 });
+    
+    // Prüfe alle Nachrichten in der Datenbank (für Debugging)
+    const allMessages = await db.getAllAsync<any>('SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT 20');
+    console.log('All recent messages in database:', allMessages.length);
+    allMessages.forEach((msg: any, index: number) => {
+      console.log(`Message ${index}:`, {
+        id: msg.id,
+        sender_id: msg.sender_id,
+        receiver_id: msg.receiver_id,
+        message: msg.message?.substring(0, 50),
+        created_at: msg.created_at,
+      });
+    });
+    
+    const messages = await db.getAllAsync<any>(
+      `SELECT * FROM chat_messages
+       WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
+       ORDER BY created_at ASC`,
+      [userId1, userId2, userId2, userId1]
+    );
+    
+    console.log('Found messages for this conversation:', messages.length);
+    console.log('Raw messages from DB:', JSON.stringify(messages, null, 2));
+    
+    const mappedMessages = messages.map((msg: any) => {
+      // Stelle sicher, dass die Nachricht korrekt extrahiert wird
+      // Prüfe alle möglichen Feldnamen
+      const messageText = msg.message !== null && msg.message !== undefined 
+        ? String(msg.message) 
+        : (msg.message_text !== null && msg.message_text !== undefined
+          ? String(msg.message_text)
+          : '');
+      
+      const mapped = {
+        id: msg.id,
+        senderId: String(msg.sender_id || msg.senderId || ''),
+        receiverId: String(msg.receiver_id || msg.receiverId || ''),
+        message: messageText,
+        createdAt: String(msg.created_at || msg.createdAt || ''),
+        read: msg.read === 1 || msg.read === true,
+      };
+      
+      console.log('Mapping message:', {
+        rawMsg: msg,
+        rawMessageField: msg.message,
+        rawMessageType: typeof msg.message,
+        rawMessageValue: JSON.stringify(msg.message),
+        allKeys: Object.keys(msg),
+        mappedMessage: mapped.message,
+        mappedMessageType: typeof mapped.message,
+        fullMapped: mapped,
+      });
+      
+      return mapped;
+    });
+    
+    console.log('Final mapped messages:', JSON.stringify(mappedMessages, null, 2));
+    return mappedMessages;
+  } catch (error) {
+    console.error('Error getting chat messages:', error);
+    throw error;
+  }
+};
+
+// Chat-Nachrichten als gelesen markieren
+export const markChatMessagesAsRead = async (
+  senderId: string,
+  receiverId: string
+): Promise<void> => {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+  
+  try {
+    await db.runAsync(
+      `UPDATE chat_messages SET read = 1
+       WHERE sender_id = ? AND receiver_id = ? AND read = 0`,
+      [senderId, receiverId]
+    );
+    
+    console.log('Chat messages marked as read');
+  } catch (error) {
+    console.error('Error marking chat messages as read:', error);
+    throw error;
+  }
+};
+
+// Chat-Konversationen für einen Nutzer abrufen
+export const getChatConversations = async (userId: string): Promise<ChatConversation[]> => {
+  if (!db) {
+    throw new Error('Database not initialized');
+  }
+  
+  try {
+    // Hole alle eindeutigen Chat-Partner
+    const conversations = await db.getAllAsync<any>(
+      `SELECT 
+        CASE 
+          WHEN sender_id = ? THEN receiver_id
+          ELSE sender_id
+        END as partner_id,
+        MAX(created_at) as last_message_time,
+        COUNT(CASE WHEN sender_id != ? AND read = 0 THEN 1 END) as unread_count
+       FROM chat_messages
+       WHERE sender_id = ? OR receiver_id = ?
+       GROUP BY partner_id
+       ORDER BY last_message_time DESC`,
+      [userId, userId, userId, userId]
+    );
+    
+    // Hole die letzte Nachricht für jede Konversation
+    const result: ChatConversation[] = [];
+    for (const conv of conversations) {
+      const lastMessage = await db.getFirstAsync<any>(
+        `SELECT message FROM chat_messages
+         WHERE ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))
+         ORDER BY created_at DESC LIMIT 1`,
+        [userId, conv.partner_id, conv.partner_id, userId]
+      );
+      
+      result.push({
+        userId: conv.partner_id,
+        userName: conv.partner_id, // Kann später durch Benutzername ersetzt werden
+        lastMessage: lastMessage?.message || undefined,
+        lastMessageTime: conv.last_message_time || undefined,
+        unreadCount: conv.unread_count || 0,
+      });
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Error getting chat conversations:', error);
     throw error;
   }
 };

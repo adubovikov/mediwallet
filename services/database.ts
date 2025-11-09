@@ -39,4 +39,12 @@ export const getTestResultById = databaseModule.getTestResultById;
 export const updateTestResult = databaseModule.updateTestResult;
 export const deleteTestResult = databaseModule.deleteTestResult;
 export const getDatabaseStats = databaseModule.getDatabaseStats;
+export const getUserSettings = databaseModule.getUserSettings;
+export const saveUserSettings = databaseModule.saveUserSettings;
+export const createTestResultShare = databaseModule.createTestResultShare;
+export const getTestResultShares = databaseModule.getTestResultShares;
+export const sendChatMessage = databaseModule.sendChatMessage;
+export const getChatMessages = databaseModule.getChatMessages;
+export const markChatMessagesAsRead = databaseModule.markChatMessagesAsRead;
+export const getChatConversations = databaseModule.getChatConversations;
 

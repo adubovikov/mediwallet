@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Alert, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, TouchableOpacity, View, Linking } from 'react-native';
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { DesignSystem, getThemeColors } from '@/constants/design';
 
 // Verfügbare Testtypen zur Auswahl
 const TEST_TYPES = [
@@ -30,6 +31,7 @@ export default function HomeScreen() {
   const isDark = colorScheme === 'dark';
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
+  const themeColors = getThemeColors(isDark);
 
   const handleAccessAnalyses = () => {
     if (isWeb) {
@@ -149,27 +151,20 @@ export default function HomeScreen() {
         }
       }
 
-      console.log('Step 4: Adding test result to database...');
-      // In Datenbank speichern
-      let testId: number;
-      try {
-        testId = await addTestResult({
+      // Schritt 3.6: Persönliche Informationen abfragen
+      // Navigiere zu Personal Info Screen
+      console.log('Step 4: Navigating to personal info screen...');
+      router.push({
+        pathname: '/personal-info',
+        params: {
+          imageUri: permanentPath,
           testType: selectedTestType,
-          imagePath: permanentPath,
-          notes: 'Scanned from camera/gallery',
-        });
-        console.log('Test result added successfully with ID:', testId);
-      } catch (dbError: any) {
-        console.error('Error adding to database:', dbError);
-        throw new Error(`Failed to save to database: ${dbError?.message || dbError}`);
-      }
-
-      console.log('=== saveTestResult SUCCESS ===');
-      Alert.alert(
-        'Success',
-        `Test result saved successfully!\nType: ${selectedTestType}\nID: ${testId}`,
-        [{ text: 'OK' }]
-      );
+        },
+      });
+      
+      // Das Speichern wird im Personal Info Screen durchgeführt
+      console.log('=== saveTestResult - Navigation to personal info ===');
+      return;
     } catch (error: any) {
       console.error('=== Error saving test result ===');
       console.error('Error object:', error);
@@ -307,64 +302,219 @@ export default function HomeScreen() {
     );
   };
 
-  const handleAnalyzeCondition = () => {
-    console.log('Analyze Health Status');
-    // TODO: Gesundheitsstatus-Analyse anzeigen
+  const handleContactDoctor = async () => {
+    try {
+      const { getUserSettings } = await import('@/services/database');
+      const settings = await getUserSettings();
+      
+      if (!settings || !settings.doctorName) {
+        Alert.alert(
+          'Kein Arzt hinterlegt',
+          'Bitte tragen Sie zuerst Ihren Hausarzt in den Einstellungen ein.',
+          [
+            {
+              text: 'Zu Einstellungen',
+              onPress: () => router.push('/settings'),
+            },
+            {
+              text: 'Abbrechen',
+              style: 'cancel',
+            },
+          ]
+        );
+        return;
+      }
+
+      const contactOptions: Array<{ text: string; onPress?: () => void; style?: 'cancel' | 'default' | 'destructive' }> = [];
+
+      if (settings.doctorPhone) {
+        contactOptions.push({
+          text: `Anrufen: ${settings.doctorPhone}`,
+          onPress: () => {
+            Linking.openURL(`tel:${settings.doctorPhone}`);
+          },
+        });
+      }
+
+      if (settings.doctorEmail) {
+        contactOptions.push({
+          text: `E-Mail: ${settings.doctorEmail}`,
+          onPress: () => {
+            Linking.openURL(`mailto:${settings.doctorEmail}?subject=Medizinische Anfrage`);
+          },
+        });
+      }
+
+      if (contactOptions.length === 0) {
+        Alert.alert(
+          'Keine Kontaktdaten',
+          `Ihr Hausarzt ${settings.doctorName} hat keine Kontaktdaten hinterlegt.\n\nBitte tragen Sie Telefonnummer oder E-Mail-Adresse in den Einstellungen ein.`,
+          [
+            {
+              text: 'Zu Einstellungen',
+              onPress: () => router.push('/settings'),
+            },
+            {
+              text: 'Abbrechen',
+              style: 'cancel',
+            },
+          ]
+        );
+        return;
+      }
+
+      contactOptions.push({
+        text: 'Abbrechen',
+        style: 'cancel',
+      });
+
+      Alert.alert(
+        `Arzt kontaktieren: ${settings.doctorName}`,
+        'Wie möchten Sie Ihren Arzt kontaktieren?',
+        contactOptions
+      );
+    } catch (error) {
+      console.error('Error contacting doctor:', error);
+      Alert.alert(
+        'Fehler',
+        'Kontaktdaten konnten nicht geladen werden. Bitte versuchen Sie es später erneut.'
+      );
+    }
+  };
+
+  const handleChat = () => {
+    router.push('/chat-list');
+  };
+
+  const handleSettings = () => {
+    router.push('/settings');
   };
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#4A90E2', dark: '#1a4d7a' }}
+      headerBackgroundColor={{ 
+        light: DesignSystem.colors.primary.main, 
+        dark: DesignSystem.colors.primary.dark 
+      }}
       headerImage={
         <View style={styles.headerContainer}>
-          <Ionicons name="medical" size={120} color="#fff" style={styles.headerIcon} />
+          <View style={styles.headerIconContainer}>
+            <Ionicons name="medical" size={100} color="#fff" style={styles.headerIcon} />
+          </View>
         </View>
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">MediWallet</ThemedText>
-      </ThemedView>
-      
-      <ThemedView style={styles.welcomeContainer}>
-        <ThemedText style={styles.welcomeText}>
-          Manage your medical test results
+        <ThemedText 
+          type="title" 
+          style={[styles.appTitle, { color: themeColors.text }]}
+        >
+          MediWallet
+        </ThemedText>
+        <ThemedText 
+          style={[styles.appSubtitle, { color: themeColors.textSecondary }]}
+        >
+          Ihre medizinischen Testergebnisse sicher verwalten
         </ThemedText>
       </ThemedView>
 
       <ThemedView style={styles.buttonsContainer}>
         <TouchableOpacity 
-          style={[styles.button, styles.primaryButton, isDark && styles.buttonDark]}
+          style={[
+            styles.button, 
+            styles.primaryButton, 
+            { backgroundColor: DesignSystem.colors.primary.main },
+            isDark && styles.buttonDark
+          ]}
           onPress={handleAccessAnalyses}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <Ionicons name="folder-open" size={32} color="#fff" />
-          <ThemedText style={styles.buttonText}>Access Test Results</ThemedText>
-          <ThemedText style={styles.buttonDescription}>
-            View all saved test results
-          </ThemedText>
+          <View style={styles.buttonIconContainer}>
+            <Ionicons name="folder-open" size={28} color="#fff" />
+          </View>
+          <View style={styles.buttonContent}>
+            <ThemedText style={styles.buttonText}>Testergebnisse</ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#fff" style={{ opacity: 0.7 }} />
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.button, styles.secondaryButton, isDark && styles.buttonDark]}
+          style={[
+            styles.button, 
+            styles.secondaryButton, 
+            { backgroundColor: DesignSystem.colors.secondary.main },
+            isDark && styles.buttonDark
+          ]}
           onPress={handleScanNew}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <Ionicons name="scan" size={32} color="#fff" />
-          <ThemedText style={styles.buttonText}>Scan New Test</ThemedText>
-          <ThemedText style={styles.buttonDescription}>
-            Add new test results
-          </ThemedText>
+          <View style={styles.buttonIconContainer}>
+            <Ionicons name="scan" size={28} color="#fff" />
+          </View>
+          <View style={styles.buttonContent}>
+            <ThemedText style={styles.buttonText}>Testergebnis scannen</ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#fff" style={{ opacity: 0.7 }} />
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.button, styles.accentButton, isDark && styles.buttonDark]}
-          onPress={handleAnalyzeCondition}
-          activeOpacity={0.7}
+          style={[
+            styles.button, 
+            styles.accentButton, 
+            { backgroundColor: DesignSystem.colors.accent.main },
+            isDark && styles.buttonDark
+          ]}
+          onPress={handleContactDoctor}
+          activeOpacity={0.8}
         >
-          <Ionicons name="analytics" size={32} color="#fff" />
-          <ThemedText style={styles.buttonText}>Analyze Health Status</ThemedText>
-          <ThemedText style={styles.buttonDescription}>
-            Get overall health assessment
-          </ThemedText>
+          <View style={styles.buttonIconContainer}>
+            <Ionicons name="call" size={28} color="#fff" />
+          </View>
+          <View style={styles.buttonContent}>
+            <ThemedText style={styles.buttonText}>Arzt kontaktieren</ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#fff" style={{ opacity: 0.7 }} />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[
+            styles.button, 
+            styles.chatButton, 
+            { backgroundColor: DesignSystem.colors.success },
+            isDark && styles.buttonDark
+          ]}
+          onPress={handleChat}
+          activeOpacity={0.8}
+        >
+          <View style={styles.buttonIconContainer}>
+            <Ionicons name="chatbubbles" size={28} color="#fff" />
+          </View>
+          <View style={styles.buttonContent}>
+            <ThemedText style={styles.buttonText}>Chat</ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#fff" style={{ opacity: 0.7 }} />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[
+            styles.button, 
+            styles.settingsButton, 
+            { 
+              backgroundColor: isDark 
+                ? DesignSystem.colors.neutral[700] 
+                : DesignSystem.colors.neutral[600] 
+            },
+            isDark && styles.buttonDark
+          ]}
+          onPress={handleSettings}
+          activeOpacity={0.8}
+        >
+          <View style={styles.buttonIconContainer}>
+            <Ionicons name="settings" size={28} color="#fff" />
+          </View>
+          <View style={styles.buttonContent}>
+            <ThemedText style={styles.buttonText}>Einstellungen</ThemedText>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#fff" style={{ opacity: 0.7 }} />
         </TouchableOpacity>
       </ThemedView>
     </ParallaxScrollView>
@@ -379,78 +529,88 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  headerIconContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
   headerIcon: {
-    opacity: 0.9,
+    opacity: 1,
   },
   titleContainer: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: DesignSystem.spacing.xl,
+    paddingHorizontal: DesignSystem.spacing.md,
   },
-  welcomeContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
+  appTitle: {
+    fontSize: DesignSystem.typography.fontSize['4xl'],
+    fontWeight: DesignSystem.typography.fontWeight.bold,
+    marginBottom: DesignSystem.spacing.sm,
+    letterSpacing: -0.5,
   },
-  welcomeText: {
-    fontSize: 16,
+  appSubtitle: {
+    fontSize: DesignSystem.typography.fontSize.base,
     textAlign: 'center',
-    opacity: 0.7,
+    lineHeight: DesignSystem.typography.fontSize.base * 1.5,
+    maxWidth: 300,
   },
   buttonsContainer: {
-    gap: 20,
-    paddingBottom: 32,
+    gap: DesignSystem.spacing.md,
+    paddingBottom: DesignSystem.spacing.xl,
+    paddingHorizontal: DesignSystem.spacing.md,
   },
   button: {
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: DesignSystem.borderRadius.lg,
+    padding: DesignSystem.spacing.lg,
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  primaryButton: {
-    backgroundColor: '#4A90E2',
-  },
-  secondaryButton: {
-    backgroundColor: '#50C878',
-  },
-  accentButton: {
-    backgroundColor: '#9B59B6',
+    gap: DesignSystem.spacing.md,
+    ...DesignSystem.shadows.lg,
+    minHeight: 80,
   },
   buttonDark: {
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
+  },
+  buttonIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: DesignSystem.borderRadius.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonContent: {
+    flex: 1,
   },
   buttonText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: DesignSystem.typography.fontSize.lg,
+    fontWeight: DesignSystem.typography.fontWeight.semibold,
     color: '#fff',
-    textAlign: 'center',
   },
-  buttonDescription: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-    textAlign: 'center',
-  },
+  primaryButton: {},
+  secondaryButton: {},
+  accentButton: {},
+  chatButton: {},
+  settingsButton: {},
   webWarningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff3cd',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    gap: 8,
+    padding: DesignSystem.spacing.md,
+    borderRadius: DesignSystem.borderRadius.md,
+    marginBottom: DesignSystem.spacing.md,
+    gap: DesignSystem.spacing.sm,
     borderWidth: 1,
     borderColor: '#ffc107',
   },
   webWarningText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: DesignSystem.typography.fontSize.sm,
     color: '#856404',
   },
 });

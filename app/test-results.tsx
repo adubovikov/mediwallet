@@ -17,6 +17,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { TestResult } from '@/types/test-result';
+import { DesignSystem, getThemeColors } from '@/constants/design';
 
 type SortOption = 'date' | 'alphabet' | 'group';
 
@@ -24,6 +25,7 @@ export default function TestResultsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const themeColors = getThemeColors(isDark);
 
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [sortedResults, setSortedResults] = useState<TestResult[]>([]);
@@ -152,32 +154,69 @@ export default function TestResultsScreen() {
 
   const renderTestResult = ({ item }: { item: TestResult }) => (
     <TouchableOpacity
-      style={[styles.card, isDark && styles.cardDark]}
+      style={[
+        styles.card, 
+        { 
+          backgroundColor: themeColors.surfaceElevated,
+          borderColor: themeColors.border,
+        },
+        isDark && styles.cardDark
+      ]}
       onPress={() => {
         router.push(`/test-detail/${item.id}`);
       }}
+      activeOpacity={0.7}
     >
       <View style={styles.cardContent}>
-        <Image source={{ uri: item.imagePath }} style={styles.thumbnail} contentFit="cover" />
+        <View style={[styles.thumbnailContainer, { backgroundColor: themeColors.surface }]}>
+          <Image 
+            source={{ uri: item.imagePath }} 
+            style={styles.thumbnail} 
+            contentFit="cover" 
+          />
+        </View>
         <View style={styles.cardInfo}>
-          <ThemedText style={styles.testType}>{item.testType}</ThemedText>
-          <ThemedText style={styles.date}>{formatDate(item.createdAt)}</ThemedText>
+          <ThemedText 
+            style={[styles.testType, { color: themeColors.text }]}
+          >
+            {item.testType}
+          </ThemedText>
+          <View style={styles.dateContainer}>
+            <Ionicons 
+              name="calendar-outline" 
+              size={14} 
+              color={themeColors.textSecondary} 
+            />
+            <ThemedText 
+              style={[styles.date, { color: themeColors.textSecondary }]}
+            >
+              {formatDate(item.createdAt)}
+            </ThemedText>
+          </View>
           {item.notes && (
-            <ThemedText style={styles.notes} numberOfLines={2}>
+            <ThemedText 
+              style={[styles.notes, { color: themeColors.textSecondary }]} 
+              numberOfLines={2}
+            >
               {item.notes}
             </ThemedText>
           )}
         </View>
-        <Ionicons name="chevron-forward" size={24} color={isDark ? '#ccc' : '#666'} />
+        <Ionicons 
+          name="chevron-forward" 
+          size={20} 
+          color={themeColors.textSecondary} 
+          style={styles.chevron}
+        />
       </View>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <Stack.Screen options={{ title: 'Test Results' }} />
-        <ActivityIndicator size="large" color="#4A90E2" />
+      <View style={[styles.centerContainer, { backgroundColor: themeColors.background }]}>
+        <Stack.Screen options={{ title: 'Testergebnisse' }} />
+        <ActivityIndicator size="large" color={DesignSystem.colors.primary.main} />
       </View>
     );
   }
@@ -186,21 +225,41 @@ export default function TestResultsScreen() {
     <ThemedView style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Test Results',
-          headerBackTitle: 'Back',
+          title: 'Testergebnisse',
+          headerBackTitle: 'Zurück',
           headerRight: () => (
-            <TouchableOpacity onPress={handleSortChange} style={styles.sortButton}>
-              <Ionicons name="swap-vertical" size={24} color={isDark ? '#fff' : '#000'} />
+            <TouchableOpacity 
+              onPress={handleSortChange} 
+              style={[styles.sortButton, { backgroundColor: themeColors.surface }]}
+              activeOpacity={0.7}
+            >
+              <Ionicons 
+                name="swap-vertical" 
+                size={22} 
+                color={themeColors.text} 
+              />
             </TouchableOpacity>
           ),
         }}
       />
       {testResults.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="folder-open-outline" size={80} color="#ccc" />
-          <ThemedText style={styles.emptyText}>No test results yet</ThemedText>
-          <ThemedText style={styles.emptySubtext}>
-            Scan your first test to get started
+        <View style={[styles.emptyContainer, { backgroundColor: themeColors.background }]}>
+          <View style={[styles.emptyIconContainer, { backgroundColor: themeColors.surface }]}>
+            <Ionicons 
+              name="folder-open-outline" 
+              size={64} 
+              color={themeColors.textSecondary} 
+            />
+          </View>
+          <ThemedText 
+            style={[styles.emptyText, { color: themeColors.text }]}
+          >
+            Noch keine Testergebnisse
+          </ThemedText>
+          <ThemedText 
+            style={[styles.emptySubtext, { color: themeColors.textSecondary }]}
+          >
+            Scannen Sie Ihr erstes Testergebnis, um zu beginnen
           </ThemedText>
         </View>
       ) : (
@@ -209,13 +268,20 @@ export default function TestResultsScreen() {
             style={[
               styles.sortIndicator,
               {
-                backgroundColor: isDark ? '#2c2c2c' : '#f5f5f5',
-                borderBottomColor: isDark ? '#444' : '#e0e0e0',
+                backgroundColor: themeColors.surface,
+                borderBottomColor: themeColors.border,
               },
             ]}
           >
-            <ThemedText style={styles.sortText}>
-              Sorted by: {sortBy === 'date' ? 'Date' : sortBy === 'alphabet' ? 'Alphabet' : 'Group'}
+            <Ionicons 
+              name="funnel-outline" 
+              size={16} 
+              color={themeColors.textSecondary} 
+            />
+            <ThemedText 
+              style={[styles.sortText, { color: themeColors.textSecondary }]}
+            >
+              Sortiert nach: {sortBy === 'date' ? 'Datum' : sortBy === 'alphabet' ? 'Alphabetisch' : 'Gruppe'}
             </ThemedText>
           </View>
           <FlatList
@@ -239,86 +305,106 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
   listContent: {
-    padding: 16,
-    gap: 12,
+    padding: DesignSystem.spacing.md,
+    gap: DesignSystem.spacing.md,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: DesignSystem.borderRadius.lg,
+    padding: DesignSystem.spacing.md,
+    borderWidth: 1,
+    ...DesignSystem.shadows.md,
   },
   cardDark: {
-    backgroundColor: '#2c2c2c',
+    shadowOpacity: 0.3,
   },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: DesignSystem.spacing.md,
+  },
+  thumbnailContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: DesignSystem.borderRadius.md,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   thumbnail: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    width: '100%',
+    height: '100%',
   },
   cardInfo: {
     flex: 1,
-    gap: 4,
+    gap: DesignSystem.spacing.xs,
   },
   testType: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: DesignSystem.typography.fontSize.lg,
+    fontWeight: DesignSystem.typography.fontWeight.semibold,
+    marginBottom: DesignSystem.spacing.xs,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DesignSystem.spacing.xs,
+    marginBottom: DesignSystem.spacing.xs,
   },
   date: {
-    fontSize: 14,
-    opacity: 0.6,
+    fontSize: DesignSystem.typography.fontSize.sm,
   },
   notes: {
-    fontSize: 13,
-    opacity: 0.7,
-    marginTop: 2,
+    fontSize: DesignSystem.typography.fontSize.sm,
+    lineHeight: DesignSystem.typography.fontSize.sm * 1.4,
+    marginTop: DesignSystem.spacing.xs,
+  },
+  chevron: {
+    marginLeft: DesignSystem.spacing.xs,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: DesignSystem.spacing.xxl,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: DesignSystem.spacing.lg,
   },
   emptyText: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    opacity: 0.6,
-    marginTop: 8,
+    fontSize: DesignSystem.typography.fontSize.xl,
+    fontWeight: DesignSystem.typography.fontWeight.semibold,
+    marginTop: DesignSystem.spacing.md,
     textAlign: 'center',
   },
+  emptySubtext: {
+    fontSize: DesignSystem.typography.fontSize.base,
+    marginTop: DesignSystem.spacing.sm,
+    textAlign: 'center',
+    maxWidth: 280,
+    lineHeight: DesignSystem.typography.fontSize.base * 1.5,
+  },
   sortButton: {
-    padding: 8,
-    marginRight: 8,
+    padding: DesignSystem.spacing.sm,
+    marginRight: DesignSystem.spacing.sm,
+    borderRadius: DesignSystem.borderRadius.md,
   },
   sortIndicator: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: DesignSystem.spacing.md,
+    paddingVertical: DesignSystem.spacing.sm,
     borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DesignSystem.spacing.sm,
   },
   sortText: {
-    fontSize: 14,
-    opacity: 0.7,
-    fontWeight: '500',
+    fontSize: DesignSystem.typography.fontSize.sm,
+    fontWeight: DesignSystem.typography.fontWeight.medium,
   },
 });
 

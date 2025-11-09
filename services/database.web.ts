@@ -1,4 +1,5 @@
 import { TestResult, NewTestResult } from '@/types/test-result';
+import { UserSettings, NewUserSettings } from '@/types/user-settings';
 
 // Web-Plattform-Stubs - Datenbank wird auf Web nicht unterstützt
 const webError = () => {
@@ -42,6 +43,51 @@ export const getDatabaseStats = async (): Promise<{
   totalTests: number;
   totalSize: number;
 }> => {
+  return webError();
+};
+
+export const getUserSettings = async (): Promise<UserSettings | null> => {
+  return webError();
+};
+
+export const saveUserSettings = async (settings: NewUserSettings): Promise<number> => {
+  return webError();
+};
+
+export const createTestResultShare = async (
+  testResultId: number,
+  doctorName: string,
+  doctorEmail: string | null,
+  expiresAt: string
+): Promise<number> => {
+  return webError();
+};
+
+export const getTestResultShares = async (testResultId: number): Promise<any[]> => {
+  return webError();
+};
+
+export const sendChatMessage = async (message: import('@/types/chat-message').NewChatMessage): Promise<number> => {
+  return webError();
+};
+
+export const getChatMessages = async (
+  userId1: string,
+  userId2: string
+): Promise<import('@/types/chat-message').ChatMessage[]> => {
+  return webError();
+};
+
+export const markChatMessagesAsRead = async (
+  senderId: string,
+  receiverId: string
+): Promise<void> => {
+  return webError();
+};
+
+export const getChatConversations = async (
+  userId: string
+): Promise<import('@/types/chat-message').ChatConversation[]> => {
   return webError();
 };
 

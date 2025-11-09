@@ -9,12 +9,24 @@ Eine mobile Anwendung zur Verwaltung und Speicherung medizinischer Testergebniss
    npm install
    ```
 
-2. **App starten**
+2. **KI-Analyse konfigurieren (optional)**
+   Um die KI-Analyse-Funktion zu nutzen, müssen Sie einen OpenAI API-Key konfigurieren:
+   
+   a. Erstellen Sie eine `.env` Datei im Projekt-Root:
+   ```bash
+   EXPO_PUBLIC_OPENAI_API_KEY=ihr-api-key-hier
+   ```
+   
+   b. Sie können einen API-Key auf [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys) erhalten.
+   
+   c. Starten Sie die App nach der Konfiguration neu.
+
+3. **App starten**
    ```bash
    npm start
    ```
 
-3. **Auf Ihrem Gerät ausführen**
+4. **Auf Ihrem Gerät ausführen**
    - QR-Code mit der Expo Go App scannen (iOS/Android)
    - `a` drücken für Android-Emulator
    - `i` drücken für iOS-Simulator
@@ -24,7 +36,9 @@ Eine mobile Anwendung zur Verwaltung und Speicherung medizinischer Testergebniss
 
 - 📸 **Neue Tests scannen** - Fotos aufnehmen oder Bilder von medizinischen Tests hochladen
 - 📂 **Testergebnisse aufrufen** - Alle gespeicherten Testergebnisse anzeigen
+- 🤖 **KI-Analyse** - Testergebnisse mit künstlicher Intelligenz analysieren lassen
 - 📊 **Gesundheitsstatus analysieren** - (In Kürze verfügbar)
+- 🔐 **Testergebnisse freigeben** - Ergebnisse für Ärzte freigeben (zeitlich begrenzt)
 - 🗄️ **Lokale Speicherung** - Alle Daten sicher auf Ihrem Gerät gespeichert (SQLite + Dateisystem)
 - 🌓 **Dunkler Modus** - Automatisches Theme-Wechseln
 - ✏️ **Bearbeiten & Löschen** - Ihre Testergebnisse verwalten

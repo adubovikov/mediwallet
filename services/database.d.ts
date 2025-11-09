@@ -17,4 +17,10 @@ export function getDatabaseStats(): Promise<{
   totalTests: number;
   totalSize: number;
 }>;
+export function getUserSettings(): Promise<import('@/types/user-settings').UserSettings | null>;
+export function saveUserSettings(settings: import('@/types/user-settings').NewUserSettings): Promise<number>;
+export function sendChatMessage(message: import('@/types/chat-message').NewChatMessage): Promise<number>;
+export function getChatMessages(userId1: string, userId2: string): Promise<import('@/types/chat-message').ChatMessage[]>;
+export function markChatMessagesAsRead(senderId: string, receiverId: string): Promise<void>;
+export function getChatConversations(userId: string): Promise<import('@/types/chat-message').ChatConversation[]>;
 
